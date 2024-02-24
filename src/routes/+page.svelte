@@ -6,33 +6,20 @@
 	import { shuffle } from "$lib/utils";
 	import JSConfetti from "js-confetti";
 
-	let transactions: any;
+	let transactions: any[];
+
+	async function fetchTransactions() {
+		return Array(100).fill(null);
+	}
 
 	let gameOn = false;
 	let txIndex = 0;
 	let jsConfetti: JSConfetti;
 
-	function f(pageSize: number = 50, page: number = 1) {
-		// To quickly see the response shape, run
-		// curl "https://hcb.hackclub.com/api/v3/organizations/hq/transactions?expand=card_charge&per_page=1" | jq ".[0]"
-
-		return fetch(
-			`https://hcb.hackclub.com/api/v3/organizations/hq/transactions?expand=card_charge&per_page=${pageSize}&page=${page}`
-		).then((res) => res.json());
-	}
-
 	onMount(async () => {
 		gameOn = true;
 		jsConfetti = new JSConfetti();
-		transactions = shuffle(await f(100));
-
-		let newTxIdx = 1;
-		while (true) {
-			let newTxs = shuffle(await f(100, ++newTxIdx));
-			if (newTxs.length === 0) break;
-			transactions = transactions.concat(newTxs);
-			if (newTxs.length < 100) break;
-		}
+		transactions = shuffle(await fetchTransactions());
 	});
 
 	const formatter = new Intl.NumberFormat("en-US", {
@@ -41,18 +28,7 @@
 	});
 
 	function guess(guessedMore: boolean) {
-		const wasMore =
-			Math.abs(transactions[txIndex].amount_cents) <
-			Math.abs(transactions[txIndex + 1].amount_cents);
-
-		if (guessedMore === wasMore) {
-			txIndex++;
-		} else {
-			gameOn = false;
-			jsConfetti.addConfetti({
-				emojis: ["💸", "🏦", "💴", "💵", "💶", "💷"]
-			});
-		}
+		// Check the guess, stop the game if wrong, increase the score if right!
 	}
 </script>
 
@@ -113,20 +89,12 @@
 	>
 		<p>Too bad!</p>
 		<p>
-			<span class="mx-1 px-2 py-1 rounded bg-slate-500/50 font-bold"
-				>{transactions[txIndex].memo}</span
-			>
+			<span class="mx-1 px-2 py-1 rounded bg-slate-500/50 font-bold">MEMO</span>
 			cost
-			<span class="text-2xl font-bold"
-				>{formatter.format(Math.abs(transactions[txIndex].amount_cents / 100))}</span
-			>, while
-			<span class="mx-1 px-2 py-1 rounded bg-slate-500/50 font-bold"
-				>{transactions[txIndex + 1].memo}</span
-			>
+			<span class="text-2xl font-bold">AMOUNT</span>, while
+			<span class="mx-1 px-2 py-1 rounded bg-slate-500/50 font-bold">MEMO</span>
 			cost
-			<span class="text-2xl font-bold"
-				>{formatter.format(Math.abs(transactions[txIndex + 1].amount_cents / 100))}</span
-			>
+			<span class="text-2xl font-bold">AMOUNT</span>
 		</p>
 		<p>Your final score was <span class="text-2xl bold">{txIndex}</span></p>
 
